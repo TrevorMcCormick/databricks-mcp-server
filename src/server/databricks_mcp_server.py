@@ -192,17 +192,17 @@ class DatabricksMCPServer(FastMCP):
         # SQL tools
         @self.tool(
             name="execute_sql",
-            description="Execute a SQL statement with parameters: statement (required), warehouse_id (required), catalog (optional), schema (optional)",
+            description="Execute a SQL statement with parameters: statement (required), warehouse_id (optional, defaults to DATABRICKS_SQL_WAREHOUSE_ID env var), catalog (optional), schema (optional)",
         )
         async def execute_sql(params: Dict[str, Any]) -> List[TextContent]:
             logger.info(f"Executing SQL with params: {params}")
             try:
                 statement = params.get("statement")
-                warehouse_id = params.get("warehouse_id")
+                warehouse_id = params.get("warehouse_id") or os.environ.get("DATABRICKS_SQL_WAREHOUSE_ID")
                 catalog = params.get("catalog")
                 schema = params.get("schema")
                 
-                result = await sql.execute_sql(statement, warehouse_id, catalog, schema)
+                result = await sql.execute_and_wait(statement, warehouse_id, catalog, schema)
                 return [{"text": json.dumps(result)}]
             except Exception as e:
                 logger.error(f"Error executing SQL: {str(e)}")
